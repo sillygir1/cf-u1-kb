@@ -1,0 +1,8 @@
+[Unit]
+Description=Panasonic keyboard thing
+
+[Service]
+ExecStart=/home/sillygir1/coding/panasonic-buttons/panasonic-kb
+
+[Install]
+WantedBy=multi-user.target
