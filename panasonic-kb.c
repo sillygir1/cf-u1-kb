@@ -12,6 +12,10 @@
 #define _KEY_UP(key) emit(io, EV_KEY, key, 0)
 #define _REPORT() emit(io, EV_SYN, SYN_REPORT, 0)
 
+#define GET_BIT(where, which) (where & (1 << which)) >> which
+#define SET_BIT(where, which) where = where | (1 << which)
+#define RESET_BIT(where, which) where = where & ~(1 << which)
+
 #define KB_DEVICE "/dev/input/event0"
 // Redefining Right Alt code for my system
 #undef KEY_RIGHTALT
@@ -28,7 +32,16 @@ typedef enum
   DOWN,
   ZOOM_IN,
   ZOOM_OUT,
+  BUTTONS_COUNT,
 } Buttons;
+
+typedef enum
+{
+  ALT,
+  CTRL,
+  SHIFT,
+  STICKY_COUNT,
+} StickyKeys;
 
 typedef struct
 {
@@ -47,7 +60,9 @@ typedef struct
 } IO;
 
 // For side keys as they don't report their status
-uint8_t status[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+uint8_t side_status = 0;
+// For sticky keys
+uint8_t sticky_status = 0;
 
 /* Copied from https://kernel.org/doc/html/v6.1/input/uinput.html and modified a little */
 void emit(IO* io, int type, int code, int val)
@@ -128,9 +143,9 @@ uint8_t io_init(IO* io)
 void special_buttons(IO* io, uint32_t code)
 {
   // printf("status: %u\n\r", status[code]);
-  if (status[code] == 1)
+  if (GET_BIT(side_status, code))
   {
-    status[code] = 0;
+    RESET_BIT(side_status, code);
     return;
   }
   switch (code)
@@ -180,30 +195,15 @@ void special_buttons(IO* io, uint32_t code)
       printf("Something's wrong\n\r");
       break;
   }
-  status[code] = 1;
+  SET_BIT(side_status, code);
 }
 
-void sticky_keys(uint8_t code)
+uint8_t sticky_keys(IO* io)
 {
-  // TODO
-  switch (code)
-  {
-    case KEY_LEFTALT:
-      printf("Left alt\n\r");
-      break;
-    case KEY_RIGHTALT:
-      printf("Right alt\n\r");
-      break;
-    case KEY_LEFTCTRL:
-      printf("Left ctrl\n\r");
-      break;
-    case KEY_LEFTSHIFT:
-      printf("Left shift\n\r");
-      break;
-    default:
-      // What
-      break;
-  }
+  uint8_t consumed = 0;
+
+  // Return 1 if key is now stuck and event is consumed
+  return consumed;
 }
 
 void get_input(IO* io)
@@ -211,9 +211,6 @@ void get_input(IO* io)
   io->events_count = 0;
 
   read(io->keyboard, io->event[io->events_count], 16);
-  // printf("%u, %x, %x, %x\n\r", io->event[0]->timestamp,
-  //        io->event[0]->section_2, io->event[0]->section_3,
-  //        io->event[0]->section_4);
 
   if (io->event[0]->section_3 != 0x00040004) return;
   io->events_count = 1;
@@ -241,6 +238,15 @@ void get_input(IO* io)
     printf("Something's wrong!\n\r");
 }
 
+void remap(IO* io)
+{
+  if (io->event[0]->section_4 == KEY_RIGHTALT)
+  {
+    io->event[0]->section_4 = KEY_LEFTSHIFT;
+    io->event[1]->section_3 = KEY_LEFTSHIFT << 16 | 1;
+  }
+}
+
 int main()
 {
   printf("It's on!\n\r");
@@ -262,15 +268,20 @@ int main()
   while (running)
   {
     get_input(io);
-
     if (io->events_count > 2 || io->events_count == 0)
     {
       printf("%u events, skipping\n\r", io->events_count);
       continue;
     }
+
+    remap(io);
+    if (sticky_keys(io)) continue;
+
     for (uint8_t i = 0; i < io->events_count; i++)
     {
-
+      printf("%u, %x, %x, %x\n\r", io->event[i]->timestamp,
+             io->event[i]->section_2, io->event[i]->section_3,
+             io->event[i]->section_4);
       send_event(io, i);
     }
     _REPORT();
