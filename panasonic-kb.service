@@ -2,7 +2,7 @@
 Description=Panasonic keyboard thing
 
 [Service]
-ExecStart=/home/sillygir1/coding/panasonic-buttons/panasonic-kb
+ExecStart=/path/to/panasonic-kb
 
 [Install]
 WantedBy=multi-user.target

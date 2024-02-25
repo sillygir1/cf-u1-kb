@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <time.h>
+// #include <time.h>
 #include <unistd.h>
 
 #define _KEY_DOWN(key) emit(io, EV_KEY, key, 1)
@@ -125,7 +125,7 @@ uint8_t io_init(IO* io)
   return 1;
 }
 
-void special_buttons(IO* io, uint8_t code)
+void special_buttons(IO* io, uint32_t code)
 {
   // printf("status: %u\n\r", status[code]);
   if (status[code] == 1)
@@ -216,7 +216,7 @@ void get_input(IO* io)
   //        io->event[0]->section_4);
 
   if (io->event[0]->section_3 != 0x00040004) return;
-  io->events_count += 1;
+  io->events_count = 1;
 
   read(io->keyboard, io->event[io->events_count], 16);
 
@@ -230,7 +230,7 @@ void get_input(IO* io)
     }
     return;
   }
-  io->events_count += 1;
+  io->events_count = 2;
 
   InputEvent event;
   memset(&event, 0, 16);
