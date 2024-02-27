@@ -57,12 +57,9 @@ typedef struct
   uint8_t events_count;
   int uinput;
   int keyboard;
+  uint8_t side_status;
+  uint8_t sticky_status;
 } IO;
-
-// For side keys as they don't report their status
-uint8_t side_status = 0;
-// For sticky keys
-uint8_t sticky_status = 0;
 
 /* Copied from https://kernel.org/doc/html/v6.1/input/uinput.html and modified a little */
 void emit(IO* io, int type, int code, int val)
@@ -94,6 +91,7 @@ int output_init()
   ioctl(uinput, UI_SET_EVBIT, EV_REL);
   ioctl(uinput, UI_SET_RELBIT, REL_WHEEL);
   ioctl(uinput, UI_SET_EVBIT, EV_KEY);
+  ioctl(uinput, UI_SET_KEYBIT, BTN_RIGHT);
 
   // Setting 0-200 key codes because it's easier this way
   for (uint8_t i = 0; i < 200; i++)
@@ -123,6 +121,8 @@ int input_init()
 
 uint8_t io_init(IO* io)
 {
+  io->side_status = 0;
+  io->sticky_status = 0;
   io->event[0] = malloc(sizeof(*io->event));
   io->event[1] = malloc(sizeof(*io->event));
   io->uinput = output_init();
@@ -143,9 +143,9 @@ uint8_t io_init(IO* io)
 void special_buttons(IO* io, uint32_t code)
 {
   // printf("status: %u\n\r", status[code]);
-  if (GET_BIT(side_status, code))
+  if (GET_BIT(io->side_status, code))
   {
-    RESET_BIT(side_status, code);
+    RESET_BIT(io->side_status, code);
     return;
   }
   switch (code)
@@ -189,13 +189,17 @@ void special_buttons(IO* io, uint32_t code)
       _REPORT();
       break;
     case ZOOM_OUT:
-      // printf("Zoom-\n\r");
+      _KEY_DOWN(BTN_RIGHT);
+      _REPORT();
+
+      _KEY_UP(BTN_RIGHT);
+      _REPORT();
       break;
     default:
       printf("Something's wrong\n\r");
       break;
   }
-  SET_BIT(side_status, code);
+  SET_BIT(io->side_status, code);
 }
 
 uint8_t sticky_keys(IO* io)
