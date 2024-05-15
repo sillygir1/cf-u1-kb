@@ -206,6 +206,8 @@ uint8_t sticky_keys(IO* io)
 {
   uint8_t consumed = 0;
 
+  // TODO
+
   // Return 1 if key is now stuck and event is consumed
   return consumed;
 }
@@ -223,10 +225,9 @@ void get_input(IO* io)
 
   if ((io->event[1]->section_3 | io->event[1]->section_4) == 0)
   {
-    // printf("Syn_report!\n\r");
     if (io->event[0]->section_4 < 108 || io->event[0]->section_4 > 100)
     {
-      printf("Special key\n\r");
+      // printf("Something's happened\n\r");
       special_buttons(io, io->event[0]->section_4 - 101);
     }
     return;

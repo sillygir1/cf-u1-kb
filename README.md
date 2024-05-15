@@ -2,7 +2,7 @@
 
 ## Info
 
-This service is used to map side keys of CF-U1 to various actions and to remap keyboard to make it easier to type. Only tested on Debian 12 with LXDE.
+This service is used to map side keys of Panasonic CF-U1 to various actions and to remap keyboard to make it easier to type. Only tested on Debian 12 with LXDE.
 
 ## Compiling
 
@@ -23,3 +23,7 @@ or put `panasonic-kb.service` to `/etc/systemd/system/`
 ```sh
 sudo cp panasonic-kb.service /etc/systemd/system/
 ```
+
+## Misc
+
+Alternatively you can set keycodes running `setkeycodes.sh` as root and map keys using some other software.
